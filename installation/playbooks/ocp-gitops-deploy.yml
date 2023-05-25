@@ -63,3 +63,22 @@
   retries: 12
   delay: 10
 
+- name: Configure Gitops role to all demo namespaces
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1 
+      kind: RoleBinding
+      metadata:
+        name: "gitops-role-binding"
+        namespace: "{{ item }}"
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io 
+        kind: ClusterRole
+        name: admin
+      subjects:
+      - kind: ServiceAccount
+        name: openshift-gitops-argocd-application-controller 
+        namespace: openshift-gitops
+    state: present
+  loop: "{{ demo_alternative_namespaces + [demo_components_namespace] }}"
+
