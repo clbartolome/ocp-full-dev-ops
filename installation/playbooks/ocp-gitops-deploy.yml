@@ -1,0 +1,65 @@
+---
+- name: Install OpenShift GitOps Operator
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: operators.coreos.com/v1alpha1
+      kind: Subscription
+      metadata:
+        name: openshift-gitops-operator
+        namespace: openshift-operators
+      spec:
+        channel: gitops-1.8
+        installPlanApproval: Automatic
+        name: openshift-gitops-operator
+        source: redhat-operators
+        sourceNamespace: openshift-marketplace
+    state: present
+
+- name: Get OpenShift GitOps Operator subscription
+  kubernetes.core.k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: Subscription
+    name: openshift-gitops-operator
+    namespace: openshift-operators
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 360
+  register: gitops_subscription
+  until:
+   - gitops_subscription.resources[0].status.currentCSV is defined
+  retries: 12
+  delay: 10
+
+- name: Wait till OpenShift GitOps Operator is installed
+  kubernetes.core.k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: ClusterServiceVersion
+    name: "{{ gitops_subscription.resources[0].status.currentCSV }}"
+    namespace: openshift-operators
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 360
+  register: gitops_csv
+  until:
+   - gitops_csv.resources[0].status.phase == "Succeeded"
+  retries: 12
+  delay: 10
+
+
+- name: Wait till the ArgoCD Server is deployed
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: openshift-gitops-server
+    namespace: openshift-gitops
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 360
+  register: argocd_server_deploy
+  until:
+   - argocd_server_deploy.resources[0].status.readyReplicas is defined
+   - "argocd_server_deploy.resources[0].status.replicas == \
+       argocd_server_deploy.resources[0].status.readyReplicas"
+  retries: 12
+  delay: 10
+
