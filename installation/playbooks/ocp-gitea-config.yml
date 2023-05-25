@@ -1,0 +1,24 @@
+---
+- name: Create Gitea user
+  ansible.builtin.uri:
+    url: "http://gitea.{{ ocp_ingress_domain[0] }}/user/sign_up"
+    method: POST
+    headers:
+      Content-Type: application/json
+    body: >
+      { 
+       "username": "gitea", 
+       "password": "openshift", 
+       "retype": "openshift", 
+       "email": "gitea@gitea.com", 
+       "send_notify": false 
+      }
+    body_format: json
+    validate_certs: false
+    status_code: 
+      - 200
+  register: _result
+  until: _result.status == 200
+  retries: 720 
+  delay: 5
+

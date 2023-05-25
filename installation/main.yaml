@@ -1,0 +1,42 @@
+---
+- name: Main
+  hosts: localhost
+  gather_facts: false
+  vars:
+    list: []
+
+  pre_tasks:
+    - name: Include configuration vars
+      ansible.builtin.include_vars:
+        file: vars/ansible-config.yaml
+
+  tasks:
+
+    - name: test
+      ansible.builtin.debug:
+        msg: "namespace is {{ demo_components_namespace }}"
+
+    - name: Get OCP cluster information
+      ansible.builtin.include_tasks:
+        file: playbooks/ocp-cluster-info.yml
+
+    - name: Config OCP cluster
+      ansible.builtin.include_tasks: 
+        file: playbooks/ocp-cluster-config.yml
+
+    - name: Install Gitea instance
+      ansible.builtin.include_tasks:
+        file: playbooks/ocp-gitea-deploy.yml
+
+    - name: Config Gitea instance
+      ansible.builtin.include_tasks:
+        file: playbooks/ocp-gitea-config.yml
+
+    - name: Create and clone remote repositories in Gitea
+      include_tasks: playbooks/gitea-external-repos.yml
+      loop: "{{ demo_external_repositories }}"
+
+    - name: Create and push components repositories in Gitea
+      include_tasks: playbooks/gitea-components-repos.yml
+      loop: "{{ demo_components }}"
+

@@ -1,0 +1,43 @@
+- name: Create repository
+  ansible.builtin.uri:
+    url: "http://gitea.{{ ocp_ingress_domain[0] }}/api/v1/user/repos"
+    user: gitea
+    password: openshift
+    method: POST
+    headers:
+      Content-Type: application/json
+    body: > 
+      { 
+      "auto_init": true, 
+      "default_branch": "master",
+      "name": "{{ item.name }}", 
+      "private": false, 
+      "trust_model": "default" 
+      }
+    body_format: json
+    validate_certs: false
+    force_basic_auth: yes
+    status_code:
+      - 201
+      - 409
+    return_content: true
+
+- name: Clone remote repository
+  ansible.builtin.shell: git clone http://gitea:openshift@gitea.{{ ocp_ingress_domain[0] }}/gitea/{{ item.name }}.git {{ item.name }}-remote
+  args:
+    chdir: /tmp
+
+- name: Copy to repository folder
+  ansible.posix.synchronize:
+    src: ../components/{{ item.name }}/
+    dest: /tmp/{{ item.name }}-remote/
+
+- name: Git Push to master
+  ansible.builtin.shell: |
+    git config user.email gitea@gitea.com
+    git config user.name gitea 
+    git add .
+    git commit -m "Creating {{ item.name }}"
+    git push
+  args:
+    chdir: /tmp/{{ item.name }}-remote/

@@ -1,0 +1,50 @@
+---
+- name: Deploy Gitea configuration
+  kubernetes.core.k8s:
+    namespace: "{{ demo_components_namespace }}"
+    state: present
+    template:
+      - path: "templates/gitea/gitea-configuration.yml.j2"
+
+- name: Deploy Gitea instance
+  kubernetes.core.k8s:
+    namespace: "{{ demo_components_namespace }}"
+    state: present
+    template:
+      - path: "templates/gitea/gitea-deployment.yml.j2"
+
+- name: Wait till Gitea database deployment is ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ demo_components_namespace }}"
+    label_selectors:
+      - app.kubernetes.io/component=database
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 360
+  register: gitea_database_deployment_obj
+  until:
+   - gitea_database_deployment_obj.resources[0].status.readyReplicas is defined
+   - "gitea_database_deployment_obj.resources[0].status.replicas == \
+       gitea_database_deployment_obj.resources[0].status.readyReplicas"
+  retries: 12
+  delay: 10
+
+- name: Wait till Gitea instance deployment is ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ demo_components_namespace }}"
+    label_selectors:
+      - app.kubernetes.io/component=gitea
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 360
+  register: gitea_instance_deployment_obj
+  until:
+   - gitea_instance_deployment_obj.resources[0].status.readyReplicas is defined
+   - "gitea_instance_deployment_obj.resources[0].status.replicas == \
+       gitea_instance_deployment_obj.resources[0].status.readyReplicas"
+  retries: 12
+  delay: 10

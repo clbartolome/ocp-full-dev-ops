@@ -1,0 +1,11 @@
+---
+- name: Get OpenShift Ingress configuration
+  kubernetes.core.k8s_info:
+    api_version: config.openshift.io/v1
+    kind: Ingress
+    name: cluster
+  register: ocp_ingress_obj
+
+- name: Set OpenShift Ingress domain
+  ansible.builtin.set_fact:
+    ocp_ingress_domain: "{{ ocp_ingress_obj | json_query('resources[*].spec.domain') }}"

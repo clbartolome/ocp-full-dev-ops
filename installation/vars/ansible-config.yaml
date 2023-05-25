@@ -1,0 +1,31 @@
+---
+hosts: 
+  - name: localhost
+    desc: ""
+    inv: "Demo Inventory"
+    vars: {}
+
+# Namespace for demo components
+demo_components_namespace: "z-components"
+
+# Alternative namespaces
+demo_alternative_namespaces:
+  - z-test-namespace
+
+# External images - for Image Streams
+demo_external_images:
+  - name: gitea
+    image: quay.io/gpte-devops-automation/gitea
+    version: 1.16
+
+# External repositories
+demo_external_repositories:
+  - name: quarkus-app
+    url: https://github.com/clbartolome/quarkus-app
+
+# Components
+demo_components:
+  - name: test
+    namespace: "{{ demo_components_namespace }}"
+  # - name: watches-eshop
+  #   namespace: wath

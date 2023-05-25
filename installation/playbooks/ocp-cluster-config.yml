@@ -1,0 +1,40 @@
+---
+- name: Create Components namespace
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ demo_components_namespace }}"
+    state: present
+
+- name: Create alternative namespaces
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item }}"
+    state: present
+  loop: "{{ demo_alternative_namespaces }}"
+
+- name: Create IS for demo images
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: image.openshift.io/v1
+      kind: ImageStream
+      metadata:
+        name: "{{ item.name }}"
+        namespace: "{{ demo_components_namespace }}"
+      spec:
+        lookupPolicy:
+          local: true
+        tags:
+        - from:
+            kind: DockerImage
+            name: "{{ item.image }}:{{ item.version }}"
+          name: "{{ item.version }}"
+          referencePolicy:
+            type: Local
+    state: present
+  loop: "{{ demo_external_images }}"
