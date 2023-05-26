@@ -10,7 +10,7 @@
       { 
       "auto_init": true, 
       "default_branch": "master",
-      "name": "{{ item.name }}", 
+      "name": "{{ demo_component.name }}", 
       "private": false, 
       "trust_model": "default" 
       }
@@ -23,21 +23,44 @@
     return_content: true
 
 - name: Clone remote repository
-  ansible.builtin.shell: git clone http://gitea:openshift@gitea.{{ ocp_ingress_domain[0] }}/gitea/{{ item.name }}.git {{ item.name }}-remote
+  ansible.builtin.shell: git clone http://gitea:openshift@gitea.{{ ocp_ingress_domain[0] }}/gitea/{{ demo_component.name }}.git {{ demo_component.name }}
   args:
     chdir: /tmp
 
-- name: Copy to repository folder
-  ansible.posix.synchronize:
-    src: ../components/{{ item.name }}/
-    dest: /tmp/{{ item.name }}-remote/
+- name: Create component directories
+  ansible.builtin.file:
+    state: directory
+    dest: /tmp/{{ demo_component.name }}/{{ item.path }}
+  with_filetree: '../components/{{ demo_component.name }}/'
+  when: item.state == 'directory'
+
+- name: Copy non template files
+  ansible.builtin.copy:
+    src: "../components/{{ demo_component.name }}/{{ item.path }}"
+    dest: /tmp/{{ demo_component.name }}/{{ item.path }}
+  with_filetree: '../components/{{ demo_component.name }}/'
+  when: 
+  - item.state == 'file' 
+  - '".j2" not in item.path'
+
+- name: Template component j2 files
+  ansible.builtin.template:
+    src: '{{ item.src }}'
+    dest: /tmp/{{ demo_component.name }}/{{ item.path | regex_replace('.j2','') }}
+    force: yes
+  with_filetree: ../components/{{ demo_component.name }}/
+  when:
+  - item.state == 'file' 
+  - '".j2" in item.path'
 
 - name: Git Push to master
   ansible.builtin.shell: |
     git config user.email gitea@gitea.com
     git config user.name gitea 
     git add .
-    git commit -m "Creating {{ item.name }}"
+    git commit -m "Creating {{ demo_component.name }}"
     git push
   args:
-    chdir: /tmp/{{ item.name }}-remote/
+    chdir: /tmp/{{ demo_component.name }}/
+
+

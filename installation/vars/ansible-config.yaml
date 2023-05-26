@@ -6,11 +6,12 @@ hosts:
     vars: {}
 
 # Namespace for demo components
-demo_components_namespace: "z-components"
+demo_components_namespace: "demo-components"
 
-# Alternative namespaces
+# Alternative namespaces (add all namespaces that ArgoCD will have to manage)
 demo_alternative_namespaces:
-  - z-test-namespace
+  - openshift-operators
+  - watches-eshop
 
 # External images - for Image Streams
 demo_external_images:
@@ -25,7 +26,7 @@ demo_external_repositories:
 
 # Components
 demo_components:
-  - name: test
-    namespace: "{{ demo_components_namespace }}"
-  # - name: watches-eshop
-  #   namespace: wath
+  - name: openshift-pipelines
+    argo_path: deploy
+  - name: watches-eshop
+    argo_path: app-sets
